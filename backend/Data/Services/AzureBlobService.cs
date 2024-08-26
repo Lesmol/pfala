@@ -41,15 +41,18 @@ namespace backend.Data.Services
 
         public async Task<BlobResponseDto> UploadImage(IFormFile blob)
         {
+            string id = GenerateId();
+            string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            string fileName = $"{id}-{timestamp}";
             BlobResponseDto response = new();
-            BlobClient client = _fileContainer.GetBlobClient(blob.FileName);
+            BlobClient client = _fileContainer.GetBlobClient(fileName);
 
             await using (Stream? data = blob.OpenReadStream())
             {
                 await client.UploadAsync(data);
             }
 
-            response.Status = $"File {blob.FileName} uploaded successfully";
+            response.Status = $"File {fileName} uploaded successfully";
             response.Error = false;
             response.Blob.Uri = client.Uri.AbsoluteUri;
             response.Blob.Name = client.Name;
@@ -64,6 +67,14 @@ namespace backend.Data.Services
             await file.DeleteAsync();
 
             return new BlobResponseDto { Error = false, Status = $"File {filename} has been deleted successfully" };
+        }
+
+        private string GenerateId()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            Random random = new();
+            return new string(Enumerable.Repeat(chars, 8)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 }
